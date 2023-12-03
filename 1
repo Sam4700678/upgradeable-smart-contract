@@ -1,0 +1,43 @@
+// Storage contract that holds the state variables
+contract Storage {
+    // Example state variable
+    uint256 public data;
+
+    // Access control for upgradeable contract
+    address public admin;
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Not authorized");
+        _;
+    }
+
+    constructor() {
+        admin = msg.sender;
+    }
+}
+
+// Logic contract with the actual functionality
+contract Logic is Storage {
+    function setData(uint256 _data) external onlyAdmin {
+        data = _data;
+    }
+}
+
+// Proxy contract that delegates calls to the logic contract
+contract Proxy is Storage {
+    address public logicContract;
+
+    constructor(address _logicContract) {
+        logicContract = _logicContract;
+    }
+
+    fallback() external payable {
+        // Delegate call to the logic contract
+        (bool success, ) = logicContract.delegatecall(msg.data);
+        require(success, "Delegate call failed");
+    }
+
+    function upgradeLogicContract(address _newLogicContract) external onlyAdmin {
+        logicContract = _newLogicContract;
+    }
+}
